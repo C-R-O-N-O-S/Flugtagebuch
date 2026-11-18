@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>UAS Flugtagebuch</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--tx:#000;--mu:#575756;--bd:#ACACAC;--ln:#E3E3E3;--soft:#F4F7E3;--gr:#009036;--gd:#007a30;--lg:#B1C800;--st:#E2001A;--bl:#002E6D;--or:#F29400;color-scheme:light}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:#fff;color:var(--tx);font:16px/1.45 "Benton Sans",Calibri,"Segoe UI",system-ui,-apple-system,sans-serif;padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.top{position:relative;overflow:hidden;background:linear-gradient(100deg,var(--gd),var(--gr));color:#fff;padding:env(safe-area-inset-top) 12px 0;border-radius:0 0 0 36px}
+.deco i{position:absolute;display:block;width:26px;height:130px;border-radius:26px;transform:rotate(30deg);top:-30px}
+.deco i:nth-child(1){right:92px;background:rgba(255,255,255,.22)}.deco i:nth-child(2){right:52px;background:var(--lg)}.deco i:nth-child(3){right:12px;background:rgba(255,255,255,.35)}
+.hd{position:relative;z-index:1;max-width:720px;margin:0 auto;display:flex;gap:10px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;padding:14px 0 16px}
+.ttl{font-size:2rem;font-weight:300;line-height:1.05}.ttl small{display:block;font-size:.85rem;font-weight:500;letter-spacing:.14em}
+.sub{font-size:.85rem;font-weight:500;margin-top:4px}
+.hb{display:flex;gap:6px;flex-wrap:wrap}
+.wrap{max-width:720px;margin:0 auto;padding:14px 12px}
+h2{margin:0 0 8px;font-size:1.3rem;font-weight:300;color:var(--st)}
+h3{margin:16px 0 6px;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--gr)}
+button,select,input,textarea{font:inherit;color:inherit}
+.btn{min-height:48px;padding:0 14px;border:1px solid var(--bd);border-radius:4px 14px 4px 4px;background:#fff;cursor:pointer;font-weight:500}
+.btn.sm{min-height:40px;margin-top:8px;font-size:.9rem}
+.btn.on{background:var(--gr);color:#fff;border-color:var(--gr)}
+.btn.ghost{min-height:42px;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.65)}
+.btn.ghost.on{background:#fff;color:var(--gd)}
+.btn:active{opacity:.7}
+#go{width:100%;min-height:max(130px,22vh);border:0;border-radius:10px 52px 10px 10px;font:inherit;font-size:2.3rem;font-weight:600;letter-spacing:.06em;color:#fff;cursor:pointer;margin-bottom:12px}
+#go.go{background:var(--gr)}#go.st{background:var(--st)}
+.card{background:var(--soft);border:1px solid var(--ln);border-radius:4px 28px 4px 4px;padding:12px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;font-size:.75rem;color:var(--mu);margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em}
+select,input,textarea{width:100%;min-height:46px;padding:8px 10px;border:1px solid var(--bd);border-radius:4px;background:#fff}
+textarea{min-height:110px}
+.mu{color:var(--mu);font-size:.9rem}
+.sl{color:var(--st);font-weight:700;margin-right:4px}
+.tag{display:inline-block;min-width:26px;text-align:center;padding:1px 8px;border-radius:4px 10px 4px 4px;background:var(--bl);color:#fff;font-weight:600;font-size:.85rem}
+.gbar{display:flex;align-items:center;margin-top:6px;padding:8px 10px;background:#fff;border-radius:4px;cursor:pointer;font-size:.92rem}
+.pbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;background:#E1E9B1;border-radius:4px;font-weight:500}
+.sig{display:inline-flex;gap:2px;align-items:flex-end;height:16px;margin-right:8px;flex:none}
+.sig i{width:5px;background:var(--ln);border-radius:2px}.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:11px}.sig i:nth-child(3){height:16px}
+.sig.l1 i:nth-child(-n+1){background:var(--st)}.sig.l2 i:nth-child(-n+2){background:var(--or)}.sig.l3 i{background:var(--gr)}
+#map{height:300px;border-radius:4px 28px 4px 4px;margin-bottom:12px;border:1px solid var(--ln)}
+#pmap{height:42vh;min-height:240px;border-radius:4px 20px 4px 4px;border:1px solid var(--ln)}
+.pin{background:var(--st);border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px var(--st),0 2px 6px rgba(0,0,0,.5)}
+dialog{background:#fff;color:var(--tx);border:1px solid var(--ln);border-top:6px solid var(--gr);border-radius:6px 32px 6px 6px;width:min(94vw,520px);max-height:92vh;padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+ul{list-style:none;padding:0;margin:6px 0}
+li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--ln)}
+li button{min-height:40px;min-width:40px;border:0;background:none;color:var(--st);font-size:1.2rem;cursor:pointer}
+.two{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--mu);color:#fff;padding:10px 16px;border-radius:4px 14px 4px 4px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center;z-index:9999}
+#toast.show{opacity:.97}
+</style>
+</head>
+<body>
+<header class="top"><div class="deco"><i></i><i></i><i></i></div><div class="hd">
+  <div><div class="ttl"><small>UAS</small>Flugtagebuch</div><div class="sub"><span class="sl">/</span>Außendienst</div></div>
+  <div class="hb"><button class="btn ghost" id="bMap" title="Luftbild ein/aus">🛰️ Luftbild</button><button class="btn ghost" id="bSet">⚙ Einstellungen</button></div>
+</div></header>
+<div class="wrap">
+
+  <button id="go" class="go">STARTEN</button>
+
+  <div class="card">
+    <div class="row"><b id="state">Bereit</b><b id="timer" style="font-variant-numeric:tabular-nums"></b></div>
+    <div id="gbar" class="gbar" title="Antippen = neu orten"><span class="sig" id="sig"><i></i><i></i><i></i></span><span id="gnss">GNSS: Suche Signal …</span></div>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div><label for="selP">Name</label><select id="selP"></select></div>
+      <div><label for="selD">Drohne (eID)</label><select id="selD"></select></div>
+    </div>
+    <div class="grid" style="margin-top:8px">
+      <button class="btn" id="bCat"></button>
+      <button class="btn" id="bNote">Bemerkung</button>
+    </div>
+    <button class="btn" id="bPick" style="width:100%;margin-top:8px">📍 Startpunkt festlegen (vor dem Start)</button>
+    <div id="planbar" class="pbar" hidden></div>
+  </div>
+
+  <div id="map" hidden></div>
+
+  <div class="row" style="margin-bottom:8px"><h2 style="margin:0">Standorte</h2><button class="btn" id="bCsv">⬇ CSV speichern</button></div>
+  <div id="list"></div>
+</div>
+
+<dialog id="dSet">
+  <h2>Einstellungen</h2>
+  <h3>Namen</h3>
+  <div class="row" style="flex-wrap:nowrap"><input id="inP" placeholder="Name Pilot/in"><button class="btn" id="addP">+</button></div>
+  <ul id="lsP"></ul>
+  <h3>Drohnen</h3>
+  <div class="two"><input id="inD" placeholder="Drohne"><input id="inE" placeholder="eID"><button class="btn" id="addD">+</button></div>
+  <ul id="lsD"></ul>
+  <h3>Daten</h3>
+  <div class="grid">
+    <button class="btn" id="delLast">Letzten Flug löschen</button>
+    <button class="btn" id="delAll" style="color:var(--st)">Alle Flüge löschen</button>
+  </div>
+  <form method="dialog" style="margin-top:16px"><button class="btn on" style="width:100%">Fertig</button></form>
+</dialog>
+
+<dialog id="dNote">
+  <h2>Bemerkung</h2>
+  <div id="noteFor" class="mu" style="margin-bottom:8px"></div>
+  <textarea id="noteTx" placeholder="z. B. Wetter, Besonderheiten, Vorkommnisse"></textarea>
+  <div class="grid" style="margin-top:12px">
+    <form method="dialog"><button class="btn" style="width:100%">Abbrechen</button></form>
+    <button class="btn on" id="noteOk">Speichern</button>
+  </div>
+</dialog>
+
+<dialog id="dPick">
+  <h2>Startpunkt setzen</h2>
+  <div class="mu" style="margin-bottom:6px">Karte antippen oder Pin ziehen. Koordinaten lassen sich auch direkt eintragen.</div>
+  <div id="pmap"></div>
+  <div class="grid" style="margin-top:8px"><div><label>Breite (lat)</label><input id="pLat" inputmode="decimal"></div><div><label>Länge (lon)</label><input id="pLon" inputmode="decimal"></div></div>
+  <button class="btn" id="pMe" style="width:100%;margin-top:8px">◎ Meine GNSS-Position übernehmen</button>
+  <div class="grid" style="margin-top:8px"><form method="dialog"><button class="btn" style="width:100%">Abbrechen</button></form><button class="btn on" id="pOk">Übernehmen</button></div>
+</dialog>
+<div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const $=s=>document.querySelector(s), K='uas_flugtagebuch_v1';
+let S={pilots:[],drones:[],p:'',d:'',cat:'O',flights:[],cur:null};
+try{Object.assign(S,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const pad=n=>String(n).padStart(2,'0');
+const fd=t=>{const d=new Date(t);return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()};
+const ft=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())};
+const fdt=t=>fd(t)+' '+ft(t);
+const dur=s=>{s=Math.round(s);return pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60)};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dLabel=d=>d.n+' · '+d.e;
+const pos=p=>p?p.lat.toFixed(6)+', '+p.lon.toFixed(6):'Position unbekannt';
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),3000)}
+function dist(a,b){const R=6371000,r=Math.PI/180,x=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lon-a.lon)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+let last=null,gErr='',wid=null;
+const mk=p=>({lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,t:Date.now()});
+const gq=a=>a<=10?'gut':a<=30?'mittel':'schwach';
+const accTxt=p=>!p?'keine Position':p.manual?'manuell gesetzt':'±'+Math.round(p.acc)+' m ('+gq(p.acc)+')';
+function errTxt(e){
+  const base=e&&e.code===1?'Standortzugriff blockiert. Berechtigung (Android/Browser) prüfen oder Seite über https öffnen.':e&&e.code===2?'Position nicht verfügbar (Empfang prüfen).':'Zeitüberschreitung, noch kein Satellitenfix.';
+  return base+(window.isSecureContext?'':' (Seite ist nicht „sicher“, https nötig)')+' Alternativ: Startpunkt auf Karte setzen.';
+}
+function setG(t,l){$('#gnss').textContent=t;$('#sig').className='sig l'+l}
+function showG(){
+  if(last&&Date.now()-last.t<60000){const a=last.acc;setG('GNSS '+gq(a)+' · ±'+Math.round(a)+' m',a<=10?3:a<=30?2:1)}
+  else setG(gErr||'GNSS: Suche Signal … (antippen = neu orten)',0);
+}
+function startWatch(){
+  if(!navigator.geolocation){gErr='Ortung vom Browser nicht unterstützt. Startpunkt auf Karte setzen.';showG();return}
+  if(wid!=null)navigator.geolocation.clearWatch(wid);
+  gErr='';showG();
+  wid=navigator.geolocation.watchPosition(p=>{last=mk(p);gErr='';showG()},e=>{gErr=errTxt(e);showG()},{enableHighAccuracy:true,maximumAge:3000,timeout:30000});
+}
+function once(hi,to){return new Promise(res=>{if(!navigator.geolocation)return res(null);
+  navigator.geolocation.getCurrentPosition(p=>res(mk(p)),e=>{gErr=errTxt(e);res(null)},{enableHighAccuracy:hi,timeout:to,maximumAge:hi?0:60000})})}
+async function getPos(){if(last&&Date.now()-last.t<15000)return{...last};return await once(true,12000)||await once(false,8000)}
+async function fix(f,k){
+  setG('Position wird ermittelt …',0);const p=await getPos();
+  if(p&&!(f[k]&&f[k].manual))f[k]=p;
+  save();showG();render();
+  if(!p&&k==='p0')toast('Keine GNSS-Position – Startpunkt bitte auf der Karte setzen');
+}
+function toggle(){
+  if(S.cur){const f=S.cur;f.t1=Date.now();S.flights.push(f);S.cur=null;save();render();fix(f,'p1');return}
+  const dr=S.drones.find(x=>dLabel(x)===S.d);
+  if(!S.p||!dr){toast('Bitte zuerst Name und Drohne anlegen');$('#dSet').showModal();return}
+  let pl=S.plan;
+  if(pl&&last&&Date.now()-last.t<60000&&dist(pl,last)>200&&!confirm('Der festgelegte Startpunkt ist ca. '+Math.round(dist(pl,last))+' m von deiner GNSS-Position entfernt. Trotzdem verwenden?')){S.plan=pl=null}
+  const t=Date.now(),f={id:t,t0:t,t1:null,p0:pl?{lat:pl.lat,lon:pl.lon,acc:null,manual:true}:null,p1:null,pilot:S.p,drone:dr.n,eid:dr.e,cat:S.cat,note:''};
+  S.cur=f;save();render();if(!pl)fix(f,'p0');
+}
+
+/* Standorte: gleicher Tag, Name, Drohne, Kategorie und Startposition <= 30 m zum ersten Start */
+function same(a,b){return !a&&!b?true:(!a||!b)?false:dist(a,b)<=30}
+function groups(){
+  const gs=[];
+  [...S.flights].sort((a,b)=>a.t0-b.t0).forEach(f=>{
+    const day=fd(f.t0);
+    let g=gs.find(g=>g.day===day&&g.pilot===f.pilot&&g.drone===f.drone&&g.eid===f.eid&&g.cat===f.cat&&same(g.ref,f.p0));
+    if(!g){g={day,pilot:f.pilot,drone:f.drone,eid:f.eid,cat:f.cat,ref:f.p0,fl:[]};gs.push(g)}
+    g.fl.push(f);
+  });
+  gs.forEach(g=>{
+    g.start=Math.min(...g.fl.map(f=>f.t0));g.end=Math.max(...g.fl.map(f=>f.t1));
+    g.sec=g.fl.reduce((s,f)=>s+(f.t1-f.t0)/1000,0);
+    g.note=[...new Set(g.fl.map(f=>f.note).filter(Boolean))].join(' | ');
+  });
+  return gs;
+}
+
+function fill(el,opts,val){
+  el.innerHTML=opts.length?opts.map(o=>`<option>${esc(o)}</option>`).join(''):'<option value="">– bitte in Einstellungen anlegen –</option>';
+  el.value=opts.includes(val)?val:(opts[0]||'');return el.value;
+}
+function render(){
+  S.p=fill($('#selP'),S.pilots,S.p);
+  S.d=fill($('#selD'),S.drones.map(dLabel),S.d);
+  const run=!!S.cur,b=$('#go');
+  b.textContent=run?'LANDEN':'STARTEN';b.className=run?'st':'go';
+  $('#state').textContent=run?'Flug läuft · Start '+ft(S.cur.t0):'Bereit';
+  tick();
+  $('#bCat').textContent='Kategorie: '+(S.cat==='O'?'O – Offen':'S – Speziell');
+  const tg=S.cur||S.flights[S.flights.length-1];
+  $('#bNote').textContent='Bemerkung'+(tg&&tg.note?' ●':'');
+  const pb=$('#planbar');pb.hidden=!S.plan;
+  if(S.plan)pb.innerHTML=`<span>📍 Nächster Start: ${S.plan.lat.toFixed(6)}, ${S.plan.lon.toFixed(6)} (manuell)</span><button class="btn sm" id="planX" style="margin:0">✕ Auto-GNSS</button>`;
+  const gs=groups();
+  $('#list').innerHTML=gs.length?gs.map((g,i)=>`<div class="card">
+    <div class="row"><b>Standort ${i+1} · ${g.day}</b><span class="tag">${g.cat}</span></div>
+    <div class="mu">${pos(g.ref)} · ${accTxt(g.ref)}</div>
+    <div class="row" style="margin-top:6px"><span>Start ${ft(g.start)}</span><span>Ende ${ft(g.end)}</span></div>
+    <div class="row"><span>Starts/Landungen: <b>${g.fl.length}</b></span><span>Flugzeit: <b>${dur(g.sec)}</b></span></div>
+    <div class="mu">${esc(g.pilot)} · ${esc(g.drone)} (${esc(g.eid)})${g.note?'<br>📝 '+esc(g.note):''}</div>
+    <button class="btn sm" data-i="${i}">📍 Standort verschieben</button></div>`).reverse().join('')
+    :'<div class="card mu">Noch keine abgeschlossenen Flüge.</div>';
+  drawMap(gs);
+}
+function tick(){$('#timer').textContent=S.cur?dur((Date.now()-S.cur.t0)/1000):''}
+setInterval(tick,1000);
+
+/* Einstellungen */
+function lists(){
+  $('#lsP').innerHTML=S.pilots.map((p,i)=>`<li><span>${esc(p)}</span><button data-p="${i}">✕</button></li>`).join('');
+  $('#lsD').innerHTML=S.drones.map((d,i)=>`<li><span>${esc(d.n)}<br><span class="mu">eID: ${esc(d.e)}</span></span><button data-d="${i}">✕</button></li>`).join('');
+}
+$('#bSet').onclick=()=>{lists();$('#dSet').showModal()};
+$('#dSet').addEventListener('close',render);
+$('#addP').onclick=()=>{const v=$('#inP').value.trim();if(!v)return;if(!S.pilots.includes(v))S.pilots.push(v);S.p=v;$('#inP').value='';save();lists()};
+$('#addD').onclick=()=>{const n=$('#inD').value.trim(),e=$('#inE').value.trim();if(!n||!e){toast('Bitte Drohne und eID eingeben');return}
+  const d={n,e};if(!S.drones.some(x=>dLabel(x)===dLabel(d)))S.drones.push(d);S.d=dLabel(d);$('#inD').value=$('#inE').value='';save();lists()};
+$('#lsP').onclick=e=>{const i=e.target.dataset.p;if(i!=null){S.pilots.splice(i,1);save();lists()}};
+$('#lsD').onclick=e=>{const i=e.target.dataset.d;if(i!=null){S.drones.splice(i,1);save();lists()}};
+$('#delLast').onclick=()=>{if(S.flights.length&&confirm('Letzten Flug wirklich löschen?')){S.flights.pop();save();render()}};
+$('#delAll').onclick=()=>{if(confirm('ALLE Flüge löschen? Vorher CSV speichern!')){S.flights=[];S.cur=null;save();render()}};
+$('#selP').onchange=e=>{S.p=e.target.value;save()};
+$('#selD').onchange=e=>{S.d=e.target.value;save()};
+
+/* Kategorie und Bemerkung */
+$('#bCat').onclick=()=>{S.cat=S.cat==='O'?'S':'O';if(S.cur)S.cur.cat=S.cat;save();render()};
+$('#bNote').onclick=()=>{
+  const f=S.cur||S.flights[S.flights.length-1];
+  if(!f){toast('Erst einen Flug starten');return}
+  $('#noteFor').textContent=S.cur?'Für den laufenden Flug ('+ft(f.t0)+')':'Für den letzten Flug ('+fdt(f.t0)+')';
+  $('#noteTx').value=f.note||'';$('#dNote').showModal();
+};
+$('#noteOk').onclick=()=>{const f=S.cur||S.flights[S.flights.length-1];if(f){f.note=$('#noteTx').value.trim();save()}$('#dNote').close();render()};
+
+/* CSV */
+function csv(){
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const rows=[['NAME','STANDORT','STARTZEIT','ENDZEIT','ANZAHL_STARTS_LANDUNGEN','REINE_FLUGZEIT','DROHNE','EID','KATEGORIE','BEMERKUNG']];
+  groups().forEach(g=>rows.push([g.pilot,pos(g.ref),fdt(g.start),fdt(g.end),g.fl.length,dur(g.sec),g.drone,g.eid,g.cat,g.note]));
+  return '\ufeff'+rows.map(r=>r.map(q).join(';')).join('\r\n');
+}
+$('#bCsv').onclick=()=>{
+  if(!S.flights.length){toast('Noch keine Flüge vorhanden');return}
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv()],{type:'text/csv;charset=utf-8'}));
+  a.download='flugtagebuch_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+};
+
+/* Luftbildkarte (Esri World Imagery, benötigt Internet) */
+let map,layer,lastN=-1;
+$('#bMap').onclick=()=>{
+  const m=$('#map'),show=m.hidden;
+  if(show&&typeof L==='undefined'){toast('Karte benötigt Internetverbindung');return}
+  m.hidden=!show;$('#bMap').classList.toggle('on',show);
+  if(show){
+    if(!map){map=L.map('map').setView([51,10],5);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);
+      layer=L.layerGroup().addTo(map)}
+    setTimeout(()=>{map.invalidateSize();lastN=-1;drawMap()},60);
+  }
+};
+function drawMap(gs){
+  if(!map||$('#map').hidden)return;gs=gs||groups();layer.clearLayers();const pts=[];
+  gs.forEach((g,i)=>{if(!g.ref)return;const ll=[g.ref.lat,g.ref.lon];pts.push(ll);
+    L.circle(ll,{radius:30,color:'#B1C800',weight:2,fillOpacity:.15}).addTo(layer);
+    L.circleMarker(ll,{radius:7,color:'#fff',weight:2,fillColor:'#E2001A',fillOpacity:1}).bindTooltip(String(i+1),{permanent:true,direction:'top'}).addTo(layer)});
+  if(S.cur&&S.cur.p0){const ll=[S.cur.p0.lat,S.cur.p0.lon];pts.push(ll);L.circleMarker(ll,{radius:8,color:'#fff',weight:2,fillColor:'#009036',fillOpacity:1}).bindTooltip('läuft',{permanent:true,direction:'top'}).addTo(layer)}
+  if(pts.length!==lastN){lastN=pts.length;if(pts.length===1)map.setView(pts[0],17);else if(pts.length)map.fitBounds(pts,{maxZoom:18,padding:[30,30]})}
+}
+
+/* Startpunkt manuell setzen */
+const TILES='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const num=v=>parseFloat(String(v).replace(',','.'));
+let pm,pk,pt=[],pplan=false;
+function setPin(lat,lon,z){$('#pLat').value=lat.toFixed(6);$('#pLon').value=lon.toFixed(6);if(pk){pk.setLatLng([lat,lon]);if(z)pm.setView([lat,lon],z)}}
+function pick(fl,plan){
+  pt=fl;pplan=!!plan;const r=(plan&&S.plan)||(fl.find(f=>f.p0)||{}).p0||last||{lat:51.3,lon:6.6,far:1};
+  $('#dPick').showModal();
+  if(typeof L==='undefined'){$('#pmap').innerHTML='<p class="mu" style="padding:12px">Karte offline – Koordinaten unten eintragen.</p>';setPin(r.lat,r.lon);return}
+  if(!pm){
+    pm=L.map('pmap');L.tileLayer(TILES,{maxZoom:19,attribution:'Tiles © Esri'}).addTo(pm);
+    pk=L.marker([r.lat,r.lon],{draggable:true,icon:L.divIcon({className:'pin',iconSize:[26,26],iconAnchor:[13,13]})}).addTo(pm);
+    const mv=ll=>{$('#pLat').value=ll.lat.toFixed(6);$('#pLon').value=ll.lng.toFixed(6)};
+    pk.on('drag',e=>mv(e.target.getLatLng()));pm.on('click',e=>{pk.setLatLng(e.latlng);mv(e.latlng)});
+  }
+  setTimeout(()=>{pm.invalidateSize();setPin(r.lat,r.lon,r.far?9:18)},80);
+}
+['#pLat','#pLon'].forEach(s=>$(s).onchange=()=>{const a=num($('#pLat').value),b=num($('#pLon').value);if(isFinite(a)&&isFinite(b)&&pk){pk.setLatLng([a,b]);pm.panTo([a,b])}});
+$('#pMe').onclick=()=>last?setPin(last.lat,last.lon,18):toast('Noch keine GNSS-Position vorhanden');
+$('#pOk').onclick=()=>{
+  const a=num($('#pLat').value),b=num($('#pLon').value);
+  if(!isFinite(a)||!isFinite(b)||Math.abs(a)>90||Math.abs(b)>180){toast('Ungültige Koordinaten');return}
+  if(pplan)S.plan={lat:a,lon:b};pt.forEach(f=>f.p0={lat:a,lon:b,acc:null,manual:true});save();$('#dPick').close();render();
+};
+$('#bPick').onclick=()=>pick(S.cur?[S.cur]:[],true);
+$('#planbar').onclick=e=>{if(e.target.id==='planX'){S.plan=null;save();render()}};
+$('#list').onclick=e=>{const b=e.target.closest('[data-i]');if(b)pick(groups()[b.dataset.i].fl)};
+
+$('#go').onclick=toggle;
+$('#gbar').onclick=startWatch;
+startWatch();setInterval(showG,5000);
+render();
+</script>
+</body>
+</html>
